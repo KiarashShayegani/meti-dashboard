@@ -216,14 +216,13 @@ for i, ticker in enumerate(ASSETS):
 # TIMEFRAME & DETAILS & BREAKDOWN
 # ────────────────────────────────────────────────
 st.markdown("### ⏱️ Select Timeframe")
-c1,c2,c3,c4 = st.columns(4)
-for key, label in [("1h","1 Hour"), ("4h","4 Hours"), ("1d","1 Day"), ("1wk","1 Week")]:
-    idx = list(TIMEFRAME_WEIGHTS.keys()).index(key) + 1
-    with locals()[f"c{idx}"]:
+timeframe_cols = st.columns(4)
+for i, (key, label) in enumerate([("1h","1 Hour"), ("4h","4 Hours"), ("1d","1 Day"), ("1wk","1 Week")]):
+    with timeframe_cols[i]:
         if st.button(
             label,
             key=key,
-            use_container_width=True,           # ← this is the fix
+            use_container_width=True,
             type="primary" if tf == key else "secondary"
         ):
             st.session_state.tf = key

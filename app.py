@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 import math
+import time
 from datetime import datetime
 
 # ========================= DEFAULTS =========================
@@ -28,27 +29,43 @@ ASSETS = {
 
 TIMEFRAME_WEIGHTS = {"1h": 0.10, "4h": 0.30, "1d": 0.40, "1wk": 0.20}
 
-# ====================== CACHED DATA ======================
-@st.cache_data(ttl=180, show_spinner=False)
+# ====================== ROBUST CLOUD-FRIENDLY DATA FETCH ======================
+@st.cache_data(ttl=120, show_spinner=False)
 def get_all_asset_data(ticker):
     data = {}
     current_price = 0.0
     for tf in TIMEFRAME_WEIGHTS:
         try:
-            if tf == "1h": df = yf.download(ticker, period="1d", interval="5m", auto_adjust=True); start_idx = -12
-            elif tf == "4h": df = yf.download(ticker, period="5d", interval="15m", auto_adjust=True); start_idx = -16
-            elif tf == "1d": df = yf.download(ticker, period="5d", interval="1h", auto_adjust=True); start_idx = -24
-            else: df = yf.download(ticker, period="1mo", interval="1d", auto_adjust=True); start_idx = -5
-            change = 0.0
+            # Use Ticker.history — more reliable on cloud
+            if tf == "1h":
+                df = yf.Ticker(ticker).history(period="1d", interval="5m")
+                start_idx = -12
+            elif tf == "4h":
+                df = yf.Ticker(ticker).history(period="5d", interval="15m")
+                start_idx = -16
+            elif tf == "1d":
+                df = yf.Ticker(ticker).history(period="5d", interval="1h")
+                start_idx = -24
+            else:  # 1wk
+                df = yf.Ticker(ticker).history(period="1mo", interval="1d")
+                start_idx = -5
+
             if len(df) >= 5:
-                start_p = df['Close'].iloc[start_idx].item()
-                end_p = df['Close'].iloc[-1].item()
+                start_p = df['Close'].iloc[start_idx]
+                end_p   = df['Close'].iloc[-1]
                 change = ((end_p - start_p) / start_p) * 100.0
+            else:
+                change = 0.0
+
             data[tf] = change
-            if current_price == 0.0 and 'end_p' in locals():
+            if current_price == 0.0:
                 current_price = float(end_p)
-        except:
+
+            time.sleep(0.3)  # tiny delay to avoid Yahoo rate-limiting on cloud
+
+        except Exception as e:
             data[tf] = 0.0
+
     return data, current_price
 
 # ====================== CALCULATIONS ======================

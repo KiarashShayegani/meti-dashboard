@@ -217,9 +217,15 @@ for i, ticker in enumerate(ASSETS):
 # ────────────────────────────────────────────────
 st.markdown("### ⏱️ Select Timeframe")
 c1,c2,c3,c4 = st.columns(4)
-for key,label in [("1h","1 Hour"),("4h","4 Hours"),("1d","1 Day"),("1wk","1 Week")]:
-    with locals()[f"c{list(TIMEFRAME_WEIGHTS.keys()).index(key)+1}"]:
-        if st.button(label, key=key, width="stretch", type="primary" if tf==key else "secondary"):
+for key, label in [("1h","1 Hour"), ("4h","4 Hours"), ("1d","1 Day"), ("1wk","1 Week")]:
+    idx = list(TIMEFRAME_WEIGHTS.keys()).index(key) + 1
+    with locals()[f"c{idx}"]:
+        if st.button(
+            label,
+            key=key,
+            use_container_width=True,           # ← this is the fix
+            type="primary" if tf == key else "secondary"
+        ):
             st.session_state.tf = key
             st.rerun()
 
